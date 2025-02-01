@@ -6,3 +6,10 @@ class ExpenseState(StatesGroup):
     reason = State()
     date_confirmation = State()
     new_date = State()
+
+
+class RevenueState(StatesGroup):
+    amount = State()
+    reason = State()
+    date_confirmation = State()
+    new_date = State()

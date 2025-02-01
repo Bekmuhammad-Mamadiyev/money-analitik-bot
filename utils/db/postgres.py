@@ -86,3 +86,38 @@ class Database:
 
     async def drop_users(self):
         await self.execute("DROP TABLE Users", execute=True)
+
+    async def create_table_revenue(self):
+        """Revenue jadvalini yaratish."""
+        sql = """
+        CREATE TABLE IF NOT EXISTS revenue (
+        id SERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        amount INT NOT NULL,
+        reason TEXT NOT NULL,
+        date DATE NOT NULL
+        );
+        """
+        await self.execute(sql, execute=True)
+
+    async def add_revenue(self, user_id: int, amount: int, reason: str, date: str):
+        """Revenue jadvaliga yangi daromad qo‘shish."""
+        sql = """
+        INSERT INTO revenue (user_id, amount, reason, date) 
+        VALUES ($1, $2, $3, $4) 
+        RETURNING *;
+        """
+        return await self.execute(sql, user_id, amount, reason, date, fetchrow=True)
+
+    async def get_user_revenues(self, user_id: int):
+        """Foydalanuvchining barcha daromadlarini olish."""
+        sql = "SELECT amount, reason, date FROM revenue WHERE user_id = $1 ORDER BY date DESC;"
+        return await self.execute(sql, user_id, fetch=True)
+
+    async def count_revenues(self):
+        """Jadvaldagi jami yozuvlar sonini olish."""
+        sql = "SELECT COUNT(*) FROM revenue;"
+        return await self.execute(sql, fetchval=True)
+
+
+
