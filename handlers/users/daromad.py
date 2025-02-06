@@ -1,13 +1,14 @@
+import logging
+from pyexpat.errors import messages
+
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from datetime import datetime
 
-from humanfriendly.terminal import message
-
-from loader import db
 from keyboards.inline.buttons import choise_data
 from states import RevenueState
+from loader import db
 
 router = Router()
 
@@ -48,8 +49,8 @@ async def confirm_date(callback_query, state: FSMContext):
                     f"💰 Miqdor: {user_data['amount']} so‘m\n"
                     f"📄 Sabab: {user_data['reason']}\n"
                     f"📅 Sana: {datetime.now().strftime('%Y-%m-%d')}")
+    await db.add_revenue(user_id[0], int(user_data["amount"]), user_data["reason"],datetime.now().date())
 
-    await db.add_revenue(user_id[0], int(user_data["amount"]), user_data["reason"], datetime.now())
     await callback_query.message.edit_reply_markup(reply_markup=None)
 
     await callback_query.message.answer(expense_text)
@@ -70,13 +71,11 @@ async def get_new_date(message: Message, state: FSMContext):
         await state.update_data(date=message.text)
 
         user_data = await state.get_data()
-        await db.add_revenue(user_id[0], int(user_data["amount"]), user_data["reason"],
-                             datetime.now())
         expense_text = (f"✅ Daromad kiritildi:\n"
                         f"💰 Miqdor: {user_data['amount']} so‘m\n"
                         f"📄 Sabab: {user_data['reason']}\n"
                         f"📅 Sana: {user_data['date']}")
-
+        await db.add_revenue(user_id[0], int(user_data["amount"]), user_data["reason"], datetime.now().date())
         await message.answer(expense_text)
         await state.clear()
     except ValueError:

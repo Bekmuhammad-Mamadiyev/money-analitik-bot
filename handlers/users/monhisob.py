@@ -5,7 +5,7 @@ from datetime import datetime
 
 from keyboards.inline.buttons import choise_data
 from states import ExpenseState
-
+from loader import db
 router = Router()
 
 
@@ -40,10 +40,19 @@ async def get_expense_reason(message: Message, state: FSMContext):
 @router.callback_query(ExpenseState.date_confirmation, F.data == "yes")
 async def confirm_date(callback_query, state: FSMContext):
     user_data = await state.get_data()
+    user = await db.select_user(telegram_id=callback_query.from_user.id)
+
+    if not user:
+        await callback_query.message.answer("⚠️ Foydalanuvchi bazada topilmadi. Iltimos, ro‘yxatdan o‘ting.")
+        return
+
+    user_id = user["id"]
     expense_text = (f"✅ Xarajat kiritildi:\n"
                     f"💰 Miqdor: {user_data['amount']} so‘m\n"
                     f"📄 Sabab: {user_data['reason']}\n"
                     f"📅 Sana: {datetime.now().strftime('%Y-%m-%d')}")
+    await db.add_expense(user_id, int(user_data["amount"]), user_data["reason"],datetime.now().date())
+
 
     await callback_query.message.edit_reply_markup(reply_markup=None)
 
@@ -60,16 +69,26 @@ async def ask_new_date(callback_query, state: FSMContext):
 
 @router.message(ExpenseState.new_date)
 async def get_new_date(message: Message, state: FSMContext):
+
     try:
         datetime.strptime(message.text, "%Y-%m-%d")
         await state.update_data(date=message.text)
 
         user_data = await state.get_data()
+
+        user = await db.select_user(telegram_id=message.from_user.id)
+
+        if not user:
+            await message.answer("⚠️ Foydalanuvchi bazada topilmadi. Iltimos, ro‘yxatdan o‘ting.")
+            return
+
+        user_id = user["id"]
+
         expense_text = (f"✅ Xarajat kiritildi:\n"
                         f"💰 Miqdor: {user_data['amount']} so‘m\n"
                         f"📄 Sabab: {user_data['reason']}\n"
                         f"📅 Sana: {user_data['date']}")
-
+        await db.add_expense(user_id, int(user_data["amount"]), user_data["reason"], datetime.now().date())
         await message.answer(expense_text)
         await state.clear()
     except ValueError:

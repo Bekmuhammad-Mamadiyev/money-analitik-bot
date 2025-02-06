@@ -12,4 +12,3 @@ inline_keyboard = [[
     InlineKeyboardButton(text="❌ Tahrirlash", callback_data='no')
 ]]
 choise_data = InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
-
